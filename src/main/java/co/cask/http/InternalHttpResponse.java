@@ -26,7 +26,7 @@ import java.io.InputStream;
  */
 public interface InternalHttpResponse {
 
-  int getStatusCode();
+    int getStatusCode();
 
-  InputSupplier<? extends InputStream> getInputSupplier() throws IOException;
+    InputSupplier<? extends InputStream> getInputSupplier() throws IOException;
 }

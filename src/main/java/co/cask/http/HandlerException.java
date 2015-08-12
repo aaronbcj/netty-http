@@ -17,35 +17,34 @@
 package co.cask.http;
 
 import com.google.common.base.Charsets;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
-import org.jboss.netty.handler.codec.http.HttpResponse;
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
-import org.jboss.netty.handler.codec.http.HttpVersion;
+import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpVersion;
 
 /**
- *Creating Http Response for Exception messages.
+ * Creating Http Response for Exception messages.
  */
 final class HandlerException extends Exception {
 
-  private final HttpResponseStatus failureStatus;
-  private final String message;
+    private final HttpResponseStatus failureStatus;
+    private final String message;
 
-  HandlerException(HttpResponseStatus failureStatus, String message) {
-    super(message);
-    this.failureStatus = failureStatus;
-    this.message = message;
-  }
+    HandlerException(HttpResponseStatus failureStatus, String message) {
+        super(message);
+        this.failureStatus = failureStatus;
+        this.message = message;
+    }
 
-  HandlerException(HttpResponseStatus failureStatus, String message, Throwable cause) {
-    super(message, cause);
-    this.failureStatus = failureStatus;
-    this.message = message;
-  }
+    HandlerException(HttpResponseStatus failureStatus, String message, Throwable cause) {
+        super(message, cause);
+        this.failureStatus = failureStatus;
+        this.message = message;
+    }
 
-  HttpResponse createFailureResponse() {
-    HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, failureStatus);
-    response.setContent(ChannelBuffers.copiedBuffer(message, Charsets.UTF_8));
-    return response;
-  }
+    HttpResponse createFailureResponse() {
+        return new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, failureStatus,
+                Unpooled.copiedBuffer(message, Charsets.UTF_8));
+    }
 }

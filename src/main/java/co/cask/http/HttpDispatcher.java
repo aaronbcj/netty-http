@@ -16,11 +16,10 @@
 
 package co.cask.http;
 
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
-import org.jboss.netty.handler.codec.http.HttpChunk;
-import org.jboss.netty.handler.codec.http.HttpMessage;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.codec.http.HttpContent;
+import io.netty.handler.codec.http.HttpRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,20 +28,17 @@ import org.slf4j.LoggerFactory;
  * from the {@code RequestRouter} context.
  */
 
-public class HttpDispatcher extends SimpleChannelUpstreamHandler {
+public class HttpDispatcher extends SimpleChannelInboundHandler<HttpRequest> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(HttpDispatcher.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpDispatcher.class);
 
-  @Override
-  public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
-    HttpMethodInfo methodInfo  = (HttpMethodInfo) ctx.getPipeline().getContext("router").getAttachment();
-    Object message = e.getMessage();
-    if (message instanceof HttpMessage) {
-      methodInfo.invoke();
-    } else if (message instanceof HttpChunk) {
-      methodInfo.chunk((HttpChunk) message);
-    } else {
-      super.messageReceived(ctx, e);
+    @Override
+    protected void channelRead0(ChannelHandlerContext ctx, HttpRequest msg) throws Exception {
+        /*HttpMethodInfo methodInfo = ctx.channel().attr(RequestRouter.METHOD_INFO).get();
+        if (msg instanceof HttpContent) {
+            methodInfo.chunk((HttpContent) msg);
+        } else {
+            methodInfo.invoke();
+        }*/
     }
-  }
 }

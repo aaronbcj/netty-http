@@ -25,9 +25,9 @@ import com.google.common.io.ByteStreams;
 import com.google.common.util.concurrent.Service;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import org.jboss.netty.handler.codec.http.HttpMethod;
-import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -53,7 +53,7 @@ public class URLRewriterTest {
   public static void setup() throws Exception {
 
     NettyHttpService.Builder builder = NettyHttpService.builder();
-    builder.addHttpHandlers(ImmutableList.of(new TestHandler()));
+    builder.addHttpHandlers(ImmutableList.of(new FooTestHandler()));
     builder.setUrlRewriter(new TestURLRewriter());
     builder.setHost(hostname);
 
@@ -74,10 +74,10 @@ public class URLRewriterTest {
   @Test
   public void testUrlRewrite() throws Exception {
     int status = doGet("/rewrite/test/v1/resource");
-    Assert.assertEquals(HttpResponseStatus.OK.getCode(), status);
+    Assert.assertEquals(HttpResponseStatus.OK.code(), status);
 
     HttpURLConnection urlConn = request("/rewrite/test/v1/tweets/7648", HttpMethod.PUT);
-    Assert.assertEquals(HttpResponseStatus.OK.getCode(), urlConn.getResponseCode());
+    Assert.assertEquals(HttpResponseStatus.OK.code(), urlConn.getResponseCode());
     Map<String, String> stringMap = GSON.fromJson(getContent(urlConn),
                                                   new TypeToken<Map<String, String>>() { }.getType());
     Assert.assertEquals(ImmutableMap.of("status", "Handled put in tweets end-point, id: 7648"), stringMap);
@@ -88,25 +88,25 @@ public class URLRewriterTest {
   @Test
   public void testUrlRewriteNormalize() throws Exception {
     int status = doGet("/rewrite//test/v1//resource");
-    Assert.assertEquals(HttpResponseStatus.OK.getCode(), status);
+    Assert.assertEquals(HttpResponseStatus.OK.code(), status);
   }
 
   @Test
   public void testRegularCall() throws Exception {
     int status = doGet("/test/v1/resource");
-    Assert.assertEquals(HttpResponseStatus.OK.getCode(), status);
+    Assert.assertEquals(HttpResponseStatus.OK.code(), status);
   }
 
   @Test
   public void testUrlRewriteUnknownPath() throws Exception {
     int status = doGet("/rewrite/unknown/test/v1/resource");
-    Assert.assertEquals(HttpResponseStatus.NOT_FOUND.getCode(), status);
+    Assert.assertEquals(HttpResponseStatus.NOT_FOUND.code(), status);
   }
 
   @Test
   public void testUrlRewriteRedirect() throws Exception {
     int status = doGet("/redirect/test/v1/resource");
-    Assert.assertEquals(HttpResponseStatus.OK.getCode(), status);
+    Assert.assertEquals(HttpResponseStatus.OK.code(), status);
   }
 
   private static class TestURLRewriter implements URLRewriter {
@@ -161,7 +161,7 @@ public class URLRewriterTest {
     if (method == HttpMethod.POST || method == HttpMethod.PUT) {
       urlConn.setDoOutput(true);
     }
-    urlConn.setRequestMethod(method.getName());
+    urlConn.setRequestMethod(method.name());
 
     return urlConn;
   }

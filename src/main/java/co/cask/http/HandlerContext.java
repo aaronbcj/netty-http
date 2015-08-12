@@ -24,14 +24,14 @@ import java.util.Map;
  */
 public interface HandlerContext {
 
-  /**
-   * @return Key Value pairs of runtime arguments.
-   */
-  Map<String, String> getRuntimeArguments();
+    /**
+     * @return Key Value pairs of runtime arguments.
+     */
+    Map<String, String> getRuntimeArguments();
 
-  /**
-   * @return the {@link HttpResourceHandler} associated with this context,
-   * used to let one handler call another internally.
-   */
-  HttpResourceHandler getHttpResourceHandler();
+    /**
+     * @return the {@link HttpResourceHandler} associated with this context,
+     * used to let one handler call another internally.
+     */
+    HttpResourceHandler getHttpResourceHandler();
 }

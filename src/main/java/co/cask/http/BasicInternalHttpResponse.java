@@ -25,19 +25,19 @@ import java.io.InputStream;
  * Class that stores the response body in memory or as a file.
  */
 public class BasicInternalHttpResponse implements InternalHttpResponse {
-  private final int statusCode;
-  private final InputSupplier<? extends InputStream> inputSupplier;
+    private final int statusCode;
+    private final InputSupplier<? extends InputStream> inputSupplier;
 
-  public BasicInternalHttpResponse(int statusCode, InputSupplier<? extends InputStream> inputSupplier) {
-    this.statusCode = statusCode;
-    this.inputSupplier = inputSupplier;
-  }
+    public BasicInternalHttpResponse(int statusCode, InputSupplier<? extends InputStream> inputSupplier) {
+        this.statusCode = statusCode;
+        this.inputSupplier = inputSupplier;
+    }
 
-  public int getStatusCode() {
-    return statusCode;
-  }
+    public int getStatusCode() {
+        return statusCode;
+    }
 
-  public InputSupplier<? extends InputStream> getInputSupplier() throws IOException {
-    return inputSupplier;
-  }
+    public InputSupplier<? extends InputStream> getInputSupplier() throws IOException {
+        return inputSupplier;
+    }
 }

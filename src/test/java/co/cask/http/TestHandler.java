@@ -24,9 +24,11 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import org.junit.Assert;
 
 import java.io.IOException;
@@ -162,7 +164,7 @@ public class TestHandler implements HttpHandler {
   }
 
   private String getStringContent(HttpRequest request) throws IOException {
-    return request.getContent().toString(Charsets.UTF_8);
+    return ((FullHttpRequest) request).content().toString(Charsets.UTF_8);
   }
 
   @Path("/multi-match/**")
@@ -232,17 +234,18 @@ public class TestHandler implements HttpHandler {
   public BodyConsumer streamUpload(HttpRequest request, HttpResponder responder) {
     final int fileSize = 30 * 1024 * 1024;
     return new BodyConsumer() {
-      ByteBuffer offHeapBuffer = ByteBuffer.allocateDirect(fileSize);
+      ByteBuf offHeapBuffer = Unpooled.buffer(fileSize);
 
       @Override
-      public void chunk(ChannelBuffer request, HttpResponder responder) {
-        offHeapBuffer.put(request.array());
+      public void chunk(ByteBuf request, HttpResponder responder) {
+//        offHeapBuffer.put(request.array());
       }
 
       @Override
       public void finished(HttpResponder responder) {
-        int bytesUploaded = offHeapBuffer.position();
-        responder.sendString(HttpResponseStatus.OK, "Uploaded:" + bytesUploaded);
+//        int bytesUploaded = offHeapBuffer.position();
+        responder.sendString(HttpResponseStatus.OK, "Uploaded:");
+//        responder.sendString(HttpResponseStatus.OK, "Uploaded:" + bytesUploaded);
       }
 
       @Override
@@ -263,7 +266,7 @@ public class TestHandler implements HttpHandler {
       ByteBuffer offHeapBuffer = ByteBuffer.allocateDirect(fileSize);
 
       @Override
-      public void chunk(ChannelBuffer request, HttpResponder responder) {
+      public void chunk(ByteBuf request, HttpResponder responder) {
         Preconditions.checkState(count == 1, "chunk error");
         offHeapBuffer.put(request.array());
       }
@@ -284,7 +287,7 @@ public class TestHandler implements HttpHandler {
   @Path("/aggregate/upload")
   @PUT
   public void aggregatedUpload(HttpRequest request, HttpResponder response) {
-    ChannelBuffer content = request.getContent();
+    ByteBuf content = ((FullHttpRequest) request).content();
     int bytesUploaded = content.readableBytes();
     response.sendString(HttpResponseStatus.OK, "Uploaded:" + bytesUploaded);
   }
@@ -293,9 +296,9 @@ public class TestHandler implements HttpHandler {
   @POST
   public void chunk(HttpRequest request, HttpResponder responder) throws IOException {
     // Echo the POST body of size 1 byte chunk
-    ChannelBuffer content = request.getContent();
+    ByteBuf content = ((FullHttpRequest) request).content();
     ChunkResponder chunker = responder.sendChunkStart(HttpResponseStatus.OK, null);
-    while (content.readable()) {
+    while (content.isReadable()) {
       chunker.sendChunk(content.readSlice(1));
     }
     chunker.close();

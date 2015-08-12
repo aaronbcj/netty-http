@@ -16,21 +16,25 @@
 
 package co.cask.http;
 
+import co.cask.http.AbstractHttpResponder;
+import co.cask.http.ChannelChunkResponder;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Multimap;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
-import org.jboss.netty.channel.DefaultFileRegion;
-import org.jboss.netty.channel.FileRegion;
-import org.jboss.netty.handler.codec.http.DefaultHttpResponse;
-import org.jboss.netty.handler.codec.http.HttpHeaders;
-import org.jboss.netty.handler.codec.http.HttpResponse;
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
-import org.jboss.netty.handler.codec.http.HttpVersion;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.DefaultFileRegion;
+import io.netty.channel.FileRegion;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.DefaultHttpResponse;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpVersion;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -38,7 +42,6 @@ import java.nio.channels.FileChannel;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.annotation.Nullable;
 
 /**
  * HttpResponder responds back to the client that initiated the request. Caller can use sendJson method to respond
@@ -46,109 +49,111 @@ import javax.annotation.Nullable;
  */
 public class BasicHttpResponder extends AbstractHttpResponder {
 
-  private final Channel channel;
-  private final boolean keepAlive;
-  private final AtomicBoolean responded;
+    private final Channel channel;
+    private final boolean keepAlive;
+    private final AtomicBoolean responded;
 
-  public BasicHttpResponder(Channel channel, boolean keepAlive) {
-    this.channel = channel;
-    this.keepAlive = keepAlive;
-    responded = new AtomicBoolean(false);
-  }
-
-  @Override
-  public ChunkResponder sendChunkStart(HttpResponseStatus status, @Nullable Multimap<String, String> headers) {
-    Preconditions.checkArgument(responded.compareAndSet(false, true), "Response has been already sent");
-    Preconditions.checkArgument((status.getCode() >= 200 && status.getCode() < 210) , "Http Chunk Failure");
-    HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
-
-    setCustomHeaders(response, headers);
-
-    response.setChunked(true);
-    response.setHeader(HttpHeaders.Names.TRANSFER_ENCODING, HttpHeaders.Values.CHUNKED);
-
-    boolean responseKeepAlive = setResponseKeepAlive(response);
-    channel.write(response);
-    return new ChannelChunkResponder(channel, responseKeepAlive);
-  }
-
-  @Override
-  public void sendContent(HttpResponseStatus status, @Nullable ChannelBuffer content, String contentType,
-                          @Nullable Multimap<String, String> headers) {
-    Preconditions.checkArgument(responded.compareAndSet(false, true), "Response has been already sent");
-    HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
-
-    setCustomHeaders(response, headers);
-
-    if (content != null) {
-      response.setContent(content);
-      response.setHeader(HttpHeaders.Names.CONTENT_TYPE, contentType);
-      response.setHeader(HttpHeaders.Names.CONTENT_LENGTH, content.readableBytes());
-    } else {
-      response.setHeader(HttpHeaders.Names.CONTENT_LENGTH, 0);
+    public BasicHttpResponder(Channel channel, boolean keepAlive) {
+        this.channel = channel;
+        this.keepAlive = keepAlive;
+        responded = new AtomicBoolean(false);
     }
 
-    boolean responseKeepAlive = setResponseKeepAlive(response);
-    ChannelFuture future = channel.write(response);
-    if (!responseKeepAlive) {
-      future.addListener(ChannelFutureListener.CLOSE);
+    @Override
+    public ChunkResponder sendChunkStart(HttpResponseStatus status, @Nullable Multimap<String, String> headers) {
+        Preconditions.checkArgument(responded.compareAndSet(false, true), "Response has been already sent");
+        Preconditions.checkArgument((status.code() >= 200 && status.code() < 210), "Http Chunk Failure");
+        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
+
+        setCustomHeaders(response, headers);
+
+//    response.setChunked(true);
+        response.headers().set(HttpHeaders.Names.TRANSFER_ENCODING, HttpHeaders.Values.CHUNKED);
+
+        boolean responseKeepAlive = setResponseKeepAlive(response);
+        channel.write(response);
+        return new ChannelChunkResponder(channel, responseKeepAlive);
     }
-  }
 
-  @Override
-  public void sendFile(File file, @Nullable Multimap<String, String> headers) {
-    Preconditions.checkArgument(responded.compareAndSet(false, true), "Response has been already sent");
-    HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-
-    setCustomHeaders(response, headers);
-    response.setHeader(HttpHeaders.Names.CONTENT_LENGTH, file.length());
-
-    final boolean responseKeepAlive = setResponseKeepAlive(response);
-
-    // Write the initial line and the header.
-    channel.write(response);
-
-    // Write the content.
-
-    ChannelFuture writeFuture;
-    try {
-      FileChannel fc = new RandomAccessFile(file, "r").getChannel();
-
-      final FileRegion region = new DefaultFileRegion(fc, 0, file.length());
-      writeFuture = channel.write(region);
-      writeFuture.addListener(new ChannelFutureListener() {
-        @Override
-        public void operationComplete(ChannelFuture future) throws Exception {
-          region.releaseExternalResources();
-          if (!responseKeepAlive) {
-            channel.close();
-          }
+    @Override
+    public void sendContent(HttpResponseStatus status, @Nullable ByteBuf content, String contentType,
+                            @Nullable Multimap<String, String> headers) {
+        Preconditions.checkArgument(responded.compareAndSet(false, true), "Response has been already sent");
+        HttpResponse response;
+        if (content != null) {
+            response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, content);
+            HttpHeaders responseHeaders = response.headers();
+            responseHeaders.set(HttpHeaders.Names.CONTENT_TYPE, contentType);
+            responseHeaders.set(HttpHeaders.Names.CONTENT_LENGTH, content.readableBytes());
+        } else {
+            response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, status);
+            HttpHeaders responseHeaders = response.headers();
+            responseHeaders.set(HttpHeaders.Names.CONTENT_LENGTH, 0);
         }
-      });
-    } catch (IOException e) {
-      throw Throwables.propagate(e);
-    }
-  }
+        setCustomHeaders(response, headers);
 
-  private void setCustomHeaders(HttpResponse response, @Nullable Multimap<String, String> headers) {
-    // Add headers. They will override all headers set by the framework
-    if (headers != null) {
-      for (Map.Entry<String, Collection<String>> entry : headers.asMap().entrySet()) {
-        response.setHeader(entry.getKey(), entry.getValue());
-      }
-    }
-  }
-
-  private boolean setResponseKeepAlive(HttpResponse response) {
-    boolean closeConn = HttpHeaders.Values.CLOSE.equalsIgnoreCase(response.getHeader(HttpHeaders.Names.CONNECTION));
-    boolean responseKeepAlive = this.keepAlive && !closeConn;
-
-    if (responseKeepAlive) {
-      response.setHeader(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
-    } else {
-      response.setHeader(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.CLOSE);
+        boolean responseKeepAlive = setResponseKeepAlive(response);
+        ChannelFuture future = channel.write(response);
+        if (!responseKeepAlive) {
+            future.addListener(ChannelFutureListener.CLOSE);
+        }
     }
 
-    return responseKeepAlive;
-  }
+    @Override
+    public void sendFile(File file, @Nullable Multimap<String, String> headers) {
+        Preconditions.checkArgument(responded.compareAndSet(false, true), "Response has been already sent");
+        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+
+        setCustomHeaders(response, headers);
+        response.headers().set(HttpHeaders.Names.CONTENT_LENGTH, file.length());
+
+        final boolean responseKeepAlive = setResponseKeepAlive(response);
+
+        // Write the initial line and the header.
+        channel.write(response);
+
+        // Write the content.
+
+        ChannelFuture writeFuture;
+        try {
+            FileChannel fc = new RandomAccessFile(file, "r").getChannel();
+
+            final FileRegion region = new DefaultFileRegion(fc, 0, file.length());
+            writeFuture = channel.write(region);
+            writeFuture.addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+//          region.releaseExternalResources(); //TODO: Azeez fix
+                    if (!responseKeepAlive) {
+                        channel.close();
+                    }
+                }
+            });
+        } catch (IOException e) {
+            throw Throwables.propagate(e);
+        }
+    }
+
+    private void setCustomHeaders(HttpResponse response, @Nullable Multimap<String, String> headers) {
+        // Add headers. They will override all headers set by the framework
+        if (headers != null) {
+            for (Map.Entry<String, Collection<String>> entry : headers.asMap().entrySet()) {
+                response.headers().add(entry.getKey(), entry.getValue());
+            }
+        }
+    }
+
+    private boolean setResponseKeepAlive(HttpResponse response) {
+        HttpHeaders headers = response.headers();
+        boolean closeConn = HttpHeaders.Values.CLOSE.equalsIgnoreCase(headers.get(HttpHeaders.Names.CONNECTION));
+        boolean responseKeepAlive = this.keepAlive && !closeConn;
+
+        if (responseKeepAlive) {
+            headers.set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
+        } else {
+            headers.set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.CLOSE);
+        }
+
+        return responseKeepAlive;
+    }
 }

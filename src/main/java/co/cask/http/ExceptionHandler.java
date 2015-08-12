@@ -16,15 +16,15 @@
 
 package co.cask.http;
 
-import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpResponseStatus;
 
 /**
  * Handles exceptions and provides a response via the {@link HttpResponder}.
  */
 public class ExceptionHandler {
-  public void handle(Throwable t, HttpRequest request, HttpResponder responder) {
-    String message = String.format("Exception encountered while processing request : %s", t.getMessage());
-    responder.sendString(HttpResponseStatus.INTERNAL_SERVER_ERROR, message);
-  }
+    public void handle(Throwable t, HttpRequest request, HttpResponder responder) {
+        String message = String.format("Exception encountered while processing request : %s", t.getMessage());
+        responder.sendString(HttpResponseStatus.INTERNAL_SERVER_ERROR, message);
+    }
 }

@@ -16,23 +16,22 @@
 
 package co.cask.http;
 
-import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpResponseStatus;
 
 /**
  * A base implementation of {@link HandlerHook} that provides no-op for both
- * {@link HandlerHook#preCall(org.jboss.netty.handler.codec.http.HttpRequest, HttpResponder, HandlerInfo)}
- * and {@link HandlerHook#postCall(org.jboss.netty.handler.codec.http.HttpRequest,
- * org.jboss.netty.handler.codec.http.HttpResponseStatus, HandlerInfo)} methods.
+ * {@link HandlerHook#preCall(HttpRequest, co.cask.http.HttpResponder, HandlerInfo)}
+ * and {@link HandlerHook#postCall(HttpRequest, HttpResponseStatus, HandlerInfo)} methods.
  */
 public abstract class AbstractHandlerHook implements HandlerHook {
-  @Override
-  public boolean preCall(HttpRequest request, HttpResponder responder, HandlerInfo handlerInfo) {
-    return true;
-  }
+    @Override
+    public boolean preCall(HttpRequest request, HttpResponder responder, HandlerInfo handlerInfo) {
+        return true;
+    }
 
-  @Override
-  public void postCall(HttpRequest request, HttpResponseStatus status, HandlerInfo handlerInfo) {
-    // no-op
-  }
+    @Override
+    public void postCall(HttpRequest request, HttpResponseStatus status, HandlerInfo handlerInfo) {
+        // no-op
+    }
 }

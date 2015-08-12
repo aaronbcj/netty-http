@@ -36,7 +36,7 @@ public class MutualAuthServerTest extends HttpsServerTest {
   @BeforeClass
   public static void setup() throws Exception {
     List<HttpHandler> handlers = Lists.newArrayList();
-    handlers.add(new TestHandler());
+    handlers.add(new FooTestHandler());
 
     NettyHttpService.Builder builder = createBaseNettyHttpServiceBuilder();
 

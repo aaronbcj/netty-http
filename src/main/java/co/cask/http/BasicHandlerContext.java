@@ -24,19 +24,19 @@ import java.util.Map;
  * BasicHandlerContext returns an empty runtime arguments.
  */
 public class BasicHandlerContext implements HandlerContext {
-  private final HttpResourceHandler httpResourceHandler;
+    private final HttpResourceHandler httpResourceHandler;
 
-  public BasicHandlerContext(HttpResourceHandler httpResourceHandler) {
-    this.httpResourceHandler = httpResourceHandler;
-  }
+    public BasicHandlerContext(HttpResourceHandler httpResourceHandler) {
+        this.httpResourceHandler = httpResourceHandler;
+    }
 
-  @Override
-  public Map<String, String> getRuntimeArguments() {
-   return ImmutableMap.of();
-  }
+    @Override
+    public Map<String, String> getRuntimeArguments() {
+        return ImmutableMap.of();
+    }
 
-  @Override
-  public HttpResourceHandler getHttpResourceHandler() {
-    return httpResourceHandler;
-  }
+    @Override
+    public HttpResourceHandler getHttpResourceHandler() {
+        return httpResourceHandler;
+    }
 }

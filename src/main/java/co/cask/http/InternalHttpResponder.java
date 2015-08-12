@@ -19,16 +19,16 @@ package co.cask.http;
 import com.google.common.collect.Multimap;
 import com.google.common.io.Files;
 import com.google.common.io.InputSupplier;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBufferInputStream;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufInputStream;
+import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.http.HttpResponseStatus;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import javax.annotation.Nullable;
 
 /**
  * InternalHttpResponder is used when a handler is being called internally by some other handler, and thus there
@@ -36,71 +36,71 @@ import javax.annotation.Nullable;
  */
 public class InternalHttpResponder extends AbstractHttpResponder {
 
-  private int statusCode;
-  private InputSupplier<? extends InputStream> inputSupplier;
+    private int statusCode;
+    private InputSupplier<? extends InputStream> inputSupplier;
 
-  public InternalHttpResponder() {
-    statusCode = 0;
-  }
+    public InternalHttpResponder() {
+        statusCode = 0;
+    }
 
-  @Override
-  public ChunkResponder sendChunkStart(HttpResponseStatus status, @Nullable Multimap<String, String> headers) {
-    statusCode = status.getCode();
-    return new ChunkResponder() {
+    @Override
+    public ChunkResponder sendChunkStart(HttpResponseStatus status, @Nullable Multimap<String, String> headers) {
+        statusCode = status.code();
+        return new ChunkResponder() {
 
-      private ChannelBuffer contentChunks = ChannelBuffers.EMPTY_BUFFER;
-      private boolean closed;
+            private ByteBuf contentChunks = Unpooled.EMPTY_BUFFER;
+            private boolean closed;
 
-      @Override
-      public void sendChunk(ByteBuffer chunk) throws IOException {
-        sendChunk(ChannelBuffers.wrappedBuffer(chunk));
-      }
+            @Override
+            public void sendChunk(ByteBuffer chunk) throws IOException {
+                sendChunk(Unpooled.wrappedBuffer(chunk));
+            }
 
-      @Override
-      public synchronized void sendChunk(ChannelBuffer chunk) throws IOException {
-        if (closed) {
-          throw new IOException("ChunkResponder already closed.");
-        }
-        contentChunks = ChannelBuffers.wrappedBuffer(contentChunks, chunk);
-      }
+            @Override
+            public synchronized void sendChunk(ByteBuf chunk) throws IOException {
+                if (closed) {
+                    throw new IOException("ChunkResponder already closed.");
+                }
+                contentChunks = Unpooled.wrappedBuffer(contentChunks, chunk);
+            }
 
-      @Override
-      public synchronized void close() throws IOException {
-        if (closed) {
-          return;
-        }
-        closed = true;
-        inputSupplier = createContentSupplier(contentChunks);
-      }
-    };
-  }
+            @Override
+            public synchronized void close() throws IOException {
+                if (closed) {
+                    return;
+                }
+                closed = true;
+                inputSupplier = createContentSupplier(contentChunks);
+            }
+        };
+    }
 
-  @Override
-  public void sendContent(HttpResponseStatus status, @Nullable ChannelBuffer content, String contentType,
-                          @Nullable Multimap<String, String> headers) {
-    statusCode = status.getCode();
-    inputSupplier = createContentSupplier(content == null ? ChannelBuffers.EMPTY_BUFFER : content);
-  }
+    @Override
+    public void sendContent(HttpResponseStatus status, @Nullable ByteBuf content, String contentType,
+                            @Nullable Multimap<String, String> headers) {
+        statusCode = status.code();
+        inputSupplier = createContentSupplier(content == null ? Unpooled.EMPTY_BUFFER : content);
+    }
 
-  @Override
-  public void sendFile(File file, @Nullable Multimap<String, String> headers) {
-    statusCode = HttpResponseStatus.OK.getCode();
-    inputSupplier = Files.newInputStreamSupplier(file);
-  }
+    @Override
+    public void sendFile(File file, @Nullable Multimap<String, String> headers) {
+        statusCode = HttpResponseStatus.OK.code();
+        inputSupplier = Files.newInputStreamSupplier(file);
+    }
 
-  public InternalHttpResponse getResponse() {
-    return new BasicInternalHttpResponse(statusCode, inputSupplier);
-  }
+    public InternalHttpResponse getResponse() {
+        return new BasicInternalHttpResponse(statusCode, inputSupplier);
+    }
 
-  private InputSupplier<InputStream> createContentSupplier(ChannelBuffer content) {
-    final ChannelBuffer responseContent = content.duplicate();    // Have independent pointers.
-    responseContent.markReaderIndex();
-    return new InputSupplier<InputStream>() {
-      @Override
-      public InputStream getInput() throws IOException {
-        responseContent.resetReaderIndex();
-        return new ChannelBufferInputStream(responseContent);
-      }
-    };
-  }
+    private InputSupplier<InputStream> createContentSupplier(ByteBuf content) {
+        final ByteBuf responseContent = content.duplicate();    // Have independent pointers.
+        responseContent.markReaderIndex();
+        return new InputSupplier<InputStream>() {
+            @Override
+            public InputStream getInput() throws IOException {
+                responseContent.resetReaderIndex();
+                return new ByteBufInputStream(responseContent);
+            }
+        };
+    }
 }

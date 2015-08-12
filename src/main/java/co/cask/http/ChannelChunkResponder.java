@@ -16,57 +16,55 @@
 
 package co.cask.http;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
-import org.jboss.netty.handler.codec.http.DefaultHttpChunk;
-import org.jboss.netty.handler.codec.http.DefaultHttpChunkTrailer;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
+import io.netty.handler.codec.http.DefaultHttpContent;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * A {@link ChunkResponder} that writes chunks to a {@link Channel}.
+ * A {@link co.cask.http.ChunkResponder} that writes chunks to a {@link Channel}.
  */
 final class ChannelChunkResponder implements ChunkResponder {
 
-  private final Channel channel;
-  private final boolean keepAlive;
-  private final AtomicBoolean closed;
+    private final Channel channel;
+    private final boolean keepAlive;
+    private final AtomicBoolean closed;
 
-  ChannelChunkResponder(Channel channel, boolean keepAlive) {
-    this.channel = channel;
-    this.keepAlive = keepAlive;
-    this.closed = new AtomicBoolean(false);
-  }
-
-  @Override
-  public void sendChunk(ByteBuffer chunk) throws IOException {
-    sendChunk(ChannelBuffers.wrappedBuffer(chunk));
-  }
-
-  @Override
-  public void sendChunk(ChannelBuffer chunk) throws IOException {
-    if (closed.get()) {
-      throw new IOException("ChunkResponder already closed.");
+    ChannelChunkResponder(Channel channel, boolean keepAlive) {
+        this.channel = channel;
+        this.keepAlive = keepAlive;
+        this.closed = new AtomicBoolean(false);
     }
-    if (!channel.isConnected()) {
-      throw new IOException("Connection already closed.");
-    }
-    channel.write(new DefaultHttpChunk(chunk));
-  }
 
-  @Override
-  public void close() throws IOException {
-    if (!closed.compareAndSet(false, true)) {
-      return;
+    @Override
+    public void sendChunk(ByteBuffer chunk) throws IOException {
+        sendChunk(Unpooled.wrappedBuffer(chunk));
     }
-    ChannelFuture future = channel.write(new DefaultHttpChunkTrailer());
+
+    @Override
+    public void sendChunk(ByteBuf chunk) throws IOException {
+        if (closed.get()) {
+            throw new IOException("ChunkResponder already closed.");
+        }
+        if (!channel.isWritable()) {
+            throw new IOException("Connection already closed.");
+        }
+        channel.write(new DefaultHttpContent(chunk));
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (!closed.compareAndSet(false, true)) {
+            return;
+        }
+        //TODO: azeez Fix
+    /*ChannelFuture future = channel.write(new DefaultHttpChunkTrailer());
     if (!keepAlive) {
       future.addListener(ChannelFutureListener.CLOSE);
+    }*/
     }
-  }
 }

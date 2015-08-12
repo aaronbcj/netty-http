@@ -21,8 +21,8 @@ import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.Service;
-import org.jboss.netty.handler.codec.http.HttpHeaders;
-import org.jboss.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpMethod;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 
@@ -47,7 +47,7 @@ public class HttpsServerTest extends HttpServerTest {
   @BeforeClass
   public static void setup() throws Exception {
     List<HttpHandler> handlers = Lists.newArrayList();
-    handlers.add(new TestHandler());
+    handlers.add(new FooTestHandler());
 
     File keyStore = tmpFolder.newFile();
     ByteStreams.copy(Resources.newInputStreamSupplier(Resources.getResource("cert.jks")),
@@ -91,7 +91,7 @@ public class HttpsServerTest extends HttpServerTest {
     if (method == HttpMethod.POST || method == HttpMethod.PUT) {
       urlConn.setDoOutput(true);
     }
-    urlConn.setRequestMethod(method.getName());
+    urlConn.setRequestMethod(method.name());
     if (!keepAlive) {
       urlConn.setRequestProperty(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.CLOSE);
     }
