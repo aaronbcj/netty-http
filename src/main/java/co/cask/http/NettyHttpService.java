@@ -179,6 +179,7 @@ public final class NettyHttpService extends AbstractIdleService {
 
         resourceHandler.init(handlerContext);
 
+        //TODO: Check how to handle this
         final ChannelInboundHandlerAdapter connectionTracker = new ChannelInboundHandlerAdapter() {
 
             @Override

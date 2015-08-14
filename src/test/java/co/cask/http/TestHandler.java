@@ -238,11 +238,14 @@ public class TestHandler implements HttpHandler {
 
       @Override
       public void chunk(ByteBuf request, HttpResponder responder) {
+          System.out.println("------- chunk");
 //        offHeapBuffer.put(request.array());
+          responder.sendString(HttpResponseStatus.OK, "Uploaded:");
       }
 
       @Override
       public void finished(HttpResponder responder) {
+          System.out.println("------- finished");
 //        int bytesUploaded = offHeapBuffer.position();
         responder.sendString(HttpResponseStatus.OK, "Uploaded:");
 //        responder.sendString(HttpResponseStatus.OK, "Uploaded:" + bytesUploaded);
