@@ -47,7 +47,7 @@ public class HttpsServerTest extends HttpServerTest {
   @BeforeClass
   public static void setup() throws Exception {
     List<HttpHandler> handlers = Lists.newArrayList();
-    handlers.add(new FooTestHandler());
+    handlers.add(new TestHandler());
 
     File keyStore = tmpFolder.newFile();
     ByteStreams.copy(Resources.newInputStreamSupplier(Resources.getResource("cert.jks")),

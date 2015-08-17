@@ -53,7 +53,7 @@ public class HandlerHookTest {
   public static void setup() throws Exception {
 
     NettyHttpService.Builder builder = NettyHttpService.builder();
-    builder.addHttpHandlers(ImmutableList.of(new FooTestHandler()));
+    builder.addHttpHandlers(ImmutableList.of(new TestHandler()));
     builder.setHandlerHooks(ImmutableList.of(handlerHook1, handlerHook2));
     builder.setHost(hostname);
 

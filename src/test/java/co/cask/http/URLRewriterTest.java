@@ -53,7 +53,7 @@ public class URLRewriterTest {
   public static void setup() throws Exception {
 
     NettyHttpService.Builder builder = NettyHttpService.builder();
-    builder.addHttpHandlers(ImmutableList.of(new FooTestHandler()));
+    builder.addHttpHandlers(ImmutableList.of(new TestHandler()));
     builder.setUrlRewriter(new TestURLRewriter());
     builder.setHost(hostname);
 
