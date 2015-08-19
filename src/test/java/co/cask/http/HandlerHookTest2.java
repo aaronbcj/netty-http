@@ -33,8 +33,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * Tests handler hooks.
  */
-public class HandlerHookTest extends BaseHandlerHookTest{
-  private static final Logger LOG = LoggerFactory.getLogger(HandlerHookTest.class);
+public class HandlerHookTest2 extends BaseHandlerHookTest {
+  private static final Logger LOG = LoggerFactory.getLogger(HandlerHookTest2.class);
 
   private static String hostname = "127.0.0.1";
   private static NettyHttpService service;
@@ -65,17 +65,43 @@ public class HandlerHookTest extends BaseHandlerHookTest{
   }
 
   @Test
-  public void testPreHookReject() throws Exception {
-    int status = doGet("/test/v1/resource", "X-Request-Type", "Reject");
-    Assert.assertEquals(HttpResponseStatus.NOT_ACCEPTABLE.code(), status);
+  public void testPreException() throws Exception {
+    int status = doGet("/test/v1/resource", "X-Request-Type", "PreException");
+    Assert.assertEquals(HttpResponseStatus.INTERNAL_SERVER_ERROR.code(), status);
 
     // Wait for any post handlers to be called
     TimeUnit.MILLISECONDS.sleep(100);
     Assert.assertEquals(1, handlerHook1.getNumPreCalls());
 
-    // The second pre-call should not have happened due to rejection by the first pre-call
+    // The second pre-call should not have happened due to exception in the first pre-call
     // None of the post calls should have happened.
     Assert.assertEquals(0, handlerHook1.getNumPostCalls());
+    Assert.assertEquals(0, handlerHook2.getNumPreCalls());
+    Assert.assertEquals(0, handlerHook2.getNumPostCalls());
+  }
+
+  @Test
+  public void testPostException() throws Exception {
+    int status = doGet("/test/v1/resource", "X-Request-Type", "PostException");
+    Assert.assertEquals(HttpResponseStatus.OK.code(), status);
+
+    Assert.assertEquals(1, handlerHook1.getNumPreCalls());
+    Assert.assertEquals(1, handlerHook1.getNumPostCalls());
+
+    Assert.assertEquals(1, handlerHook2.getNumPreCalls());
+    Assert.assertEquals(1, handlerHook2.getNumPostCalls());
+  }
+
+  @Test
+  public void testUnknownPath() throws Exception {
+    int status = doGet("/unknown/path/test/v1/resource");
+    Assert.assertEquals(HttpResponseStatus.NOT_FOUND.code(), status);
+
+    // Wait for any post handlers to be called
+    TimeUnit.MILLISECONDS.sleep(100);
+    Assert.assertEquals(0, handlerHook1.getNumPreCalls());
+    Assert.assertEquals(0, handlerHook1.getNumPostCalls());
+
     Assert.assertEquals(0, handlerHook2.getNumPreCalls());
     Assert.assertEquals(0, handlerHook2.getNumPostCalls());
   }
